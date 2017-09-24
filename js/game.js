@@ -25,10 +25,25 @@ var platform;
 var platformPlaced = false;
 var target = [];
 var tNo = 0;
+var defense;
+var defMoveDir = Math.PI / 2;
 
 var score = 0;
 var gameOver = false;
 var total;
+
+var cannon_fire;
+var cannon_hit;
+var lion_roar;
+var lion_hit;
+var tiger_roar;
+var tiger_hit;
+var bear_roar;
+var bear_hit;
+var chicken_roar;
+var chicken_hit;
+var music;
+var music_play = true;
 
 // Make Physijs work correctly
 Physijs.scripts.worker = 'libs/physijs_worker.js';
@@ -49,8 +64,11 @@ function initGame()
   setupRenderer();
   addSpotLight();
 
+  loadSounds();
+  playMusic();
+
   document.body.appendChild(renderer.domElement); // Output to the stream
-  render(); // Call render
+  render();
 }
 
 function render()
@@ -75,6 +93,8 @@ function render()
 
   positionCamera();
   moveLights();
+
+  chickenDefense();
 
   requestAnimationFrame(render);
   renderer.render(scene, camera);
@@ -106,11 +126,10 @@ function createWalls()
   for (var i = 0; i < 8; i++)
   {
     wall[i] = new Physijs.BoxMesh(boxGeometry, boxMaterial, 0);
-    wall[i].name = "Wall" + i;
+    wall[i].name = "Wall";
     wall[i].position.z = 100;
 
-    // x position
-    if (i % 2 === 0)
+    if (i % 2 === 0) // x position
     {
       if (i % 4 != 0)
         wall[i].position.x = (i < 4 ? 1 : -1) * walldist;
@@ -123,8 +142,7 @@ function createWalls()
         wall[i].position.x = -walldist * Math.cos(Math.PI / 4);
     }
 
-    // y position
-    if (i % 2 === 0)
+    if (i % 2 === 0) // y position
     {
       if (i % 4 === 0)
         wall[i].position.y = walldist;
@@ -192,6 +210,15 @@ function createBall(bNo)
   ball[bNo].position.z = cannon.position.z - Math.sin(cannon.rotation.y) * 10;
 
   ball[bNo].name = 'CannonBall' + bNo;
+  ball[bNo].addEventListener('collision',
+    function (other_object, linear_velocity, angular_velocity)
+    {
+      if (other_object.name === "Target"
+          // || other_object.name === "Wall"
+          || other_object.name === "Defense"
+          || other_object.name === "Platform")
+        cannon_hit.play();
+    });
 }
 
 function createPlatform()
@@ -217,7 +244,7 @@ function createPlatform()
     case 1:
       platform.position.x = randBtwn(-25, 25);
       platform.position.y = 100;
-      platform.position.z = randBtwn(-45, -5);
+      platform.position.z = randBtwn(-10, 25);
       break;
     case 2:
       platform.position.x = randBtwn(-75, 75);
@@ -246,18 +273,23 @@ function createTarget(tNo)
       case 0:
         texture = new THREE.TextureLoader().load("images/lion.png");
         targetGeo = new THREE.BoxGeometry(3, 18, 24);
+        lion_roar.play();
         break;
       case 1:
         texture = new THREE.TextureLoader().load("images/tiger.png");
         targetGeo = new THREE.BoxGeometry(4, 21, 28);
+        tiger_roar.play();
         break;
       case 2:
         texture = new THREE.TextureLoader().load("images/bear.png");
         targetGeo = new THREE.BoxGeometry(4, 24, 24);
+        bear_roar.play();
         break;
       case 3:
         texture = new THREE.TextureLoader().load("images/chicken.png");
         targetGeo = new THREE.BoxGeometry(2, 16, 12);
+        chicken_roar.play();
+        createDefense();
         break;
     }
 
@@ -288,10 +320,55 @@ function scoreCheck(other_object, linear_velocity, angular_velocity)
 {
   if (other_object.name === "GroundPlane")
   {
+    switch(tNo)
+    {
+      case 0:
+        lion_hit.play();
+        break;
+      case 1:
+        tiger_hit.play();
+        break;
+      case 2:
+        bear_hit.play();
+        break;
+      case 3:
+        chicken_hit.play();
+        break;
+    }
     scene.remove(platform);
     scene.remove(target);
     tNo++;
     score++;
+  }
+}
+
+function createDefense()
+{
+  var ballGeometry = new THREE.SphereGeometry(16, 24, 24);
+  var ballMaterial = Physijs.createMaterial(
+                       new THREE.MeshStandardMaterial({color:0x262626}),
+                       1, 1);
+  defense = new Physijs.SphereMesh(ballGeometry, ballMaterial, 10000);
+  defense.name = "Defense";
+
+  scene.add(defense);
+}
+
+function chickenDefense()
+{
+  if (scene.getObjectByName("Defense"))
+  {
+    if (scene.getObjectByName("Target"))
+    {
+      defense.__dirtyPosition = true;
+
+      defense.position.x = target.position.x + (25 * Math.cos(defMoveDir));
+      defMoveDir += (4/3) * Math.PI / 180;
+      if (defMoveDir >= 2 * Math.PI)
+        defMoveDir = 0;
+      defense.position.y = target.position.y - 50;
+      defense.position.z = target.position.z;
+    }
   }
 }
 
@@ -306,7 +383,10 @@ function checkGameStatus()
     ballsLeft = 999;
     force = 30000;
   }
-  else if (ballsLeft === 0)
+  else if (ballsLeft === 0
+            && ball[1].position.z <= 10
+            && scene.getObjectByName("Target")
+            && target.getLinearVelocity().lengthSq() < 0.0001)
   {
     gameOver = true;
     total = score;
@@ -346,7 +426,6 @@ function keyboardControls()
     { cannonAngleZ = cannon.rotation.z = (Math.PI / 2); }
   }
 
-
   // Cannon fire & reload
   if (!ballLaunched && ballsLeft > 0 && Key.isDown(Key.F)) // Fire
   {
@@ -354,6 +433,7 @@ function keyboardControls()
     ballLaunched = true;
     scene.add(ball[ballsLeft]);
     ball[ballsLeft].applyCentralImpulse(new THREE.Vector3(vX(), vY(), vZ()));
+    cannon_fire.play();
     ballsLeft--;
 
     if (gameOver && score === 4)
@@ -362,24 +442,27 @@ function keyboardControls()
     }
   }
   if (ballLaunched && Key.isDown(Key.R)) // Reload
-  {
     if (ballsLeft > 0)
-    {
       ballLaunched = false;
-      // scene.remove(ball);
-    }
-  }
-
 
   // Show help menu
-  if (Key.isDown(Key.H)) // Cannon up
+  if (Key.isDown(Key.H))
     if (!helpRest) { help = !help; }
+
+  // Toggle music on/off
+  if (Key.isDown(Key.M))
+  {
+    music_play = !music_play;
+    if (music_play)
+      music.play();
+    else
+      music.pause();
+  }
 }
 
 function setupRenderer()
 {
   renderer = new THREE.WebGLRenderer();
-  //						color     alpha
   renderer.setClearColor(0x000000, 1.0);
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.shadowMap.enabled = true;
@@ -470,7 +553,9 @@ function helpMenu()
       "<br><u>Controls</u>"
       + "<br>WASD : Aim the cannon"
       + "<br>&nbsp;&nbsp;&nbsp;F : Fire the cannon!"
-      + "<br>&nbsp;&nbsp;&nbsp;R : Reload";
+      + "<br>&nbsp;&nbsp;&nbsp;R : Reload"
+      + "<br>&nbsp;&nbsp;&nbsp;M : Toggle music"
+        + " (" + (music_play ? "ON" : "OFF") + ")";
   }
   else
     document.getElementById('help').innerHTML =
@@ -493,6 +578,34 @@ function gameOverScreen()
         "<br><big>YOU LOSE</big>"
         + "<br>Refresh to try again!";
   }
+}
+
+function playMusic()
+{
+  music.addEventListener('ended', function()
+  {
+    if (music_play)
+    {
+      this.currentTime = 0;
+      this.play();
+    }
+  }, false);
+  music.play();
+}
+
+function loadSounds()
+{
+  cannon_fire = new Audio("sounds/cannon_fire.wav");
+  cannon_hit = new Audio("sounds/cannon_hit.wav");
+  lion_roar = new Audio("sounds/lion_roar.wav");
+  lion_hit = new Audio("sounds/lion_hit.wav");
+  tiger_roar = new Audio("sounds/tiger_roar.wav");
+  tiger_hit = new Audio("sounds/tiger_hit.wav");
+  bear_roar = new Audio("sounds/bear_roar.wav");
+  bear_hit = new Audio("sounds/bear_hit.wav");
+  chicken_roar = new Audio("sounds/chicken_roar.wav");
+  chicken_hit = new Audio("sounds/chicken_hit.wav");
+  music = new Audio("sounds/music.wav");
 }
 
 function showHelp()

@@ -2,9 +2,10 @@ For a grade of C, you need the following:
 √  1. A textured plane upon which the objects are placed and move
 √  2. An object that fires projectiles
 √  3. A Physijs compliant physics-based 3D world
-   4. Sounds and optional music
+√  4. Sounds and optional music
 √  5. At least four different targets, which are made up of independent objects.
-√  6. An object in the target, that when it hits the ground plane, will add to the score
+√  6. An object in the target, that when it hits the ground plane, will add to
+        the score
    7. 3D text
 √  8. Score
 √  9. Simple help for play keys
@@ -17,8 +18,8 @@ For an example of an A project, go to the link at:
 
 Going past a quiz a grade of C, you can add any combination of the following
  (you don't need them all to get 100):
-   1. Objects that move in front of the target that the projectile might hit
-   2. Music
+√  1. Objects that move in front of the target that the projectile might hit
+√  2. Music
    3. Changing projectiles and a selector
    4. Catapult instead of a cannon
 √  5. Changeable perspective, favoring perspective from the cannon/catapult.
