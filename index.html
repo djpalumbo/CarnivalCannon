@@ -1,0 +1,87 @@
+<html>
+  <head>
+    <title>Angry Birds 3D</title>
+    <style>
+      body
+      {
+        color       : #ffffff;
+        font-family : Monospace;
+        font-size   : 28px;
+        margin      : 0px;
+        overflow    : hidden;
+        text-shadow : -1px -1px 0 #000,
+                       1px -1px 0 #000,
+                      -1px  1px 0 #000,
+                       1px  1px 0 #000;
+      }
+
+      sf { font-size : 20px; }
+      big { font-size : 64px; }
+
+      #score
+      {
+        text-align : left;
+        position   : absolute;
+        top        : 0px;
+        left       : 0px;
+        padding    : 5px;
+        z-index    : 100;
+      }
+
+      #balls
+      {
+        text-align : right;
+        position   : absolute;
+        top        : 0px;
+        right      : 0px;
+        padding    : 5px;
+        z-index    : 100;
+      }
+
+      #help
+      {
+        text-align : left;
+        position   : absolute;
+        left       : 0px;
+        bottom     : 0px;
+        padding    : 5px;
+        z-index    : 100;
+      }
+
+      #gameOver
+      {
+        position  : fixed;
+        top       : 50%;
+        left      : 50%;
+        transform : translate(-50%, -50%);
+        z-index   : 100;
+      }
+
+      #credits
+      {
+        text-align : right;
+        position   : absolute;
+        bottom     : 0px;
+        right      : 0px;
+        padding    : 5px;
+        z-index    : 100;
+      }
+    </style>
+
+    <script src="./libs/keyboard.js"></script>
+    <script src="./libs/three.js"></script>
+    <script src="./libs/physi.js"></script>
+  </head>
+
+  <body>
+		<div id="score"></div>
+		<div id="balls"></div>
+		<div id="help"></div>
+		<div id="gameOver"></div>
+    <div id="credits"><sf>made by David Palumbo</sf></div>
+    <script src="./js/game.js"></script>
+    <script>
+      window.onload = initGame();
+    </script>
+  </body>
+</html>
